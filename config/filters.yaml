@@ -1,6 +1,10 @@
 # Filtering rules. Everything here is tunable without touching code.
 # A job is kept only if it passes ALL of: role/season, category keywords, US location, active.
 
+# Reject application links on these hosts from every source.
+excluded_url_hosts:
+  - go.vansh.nyc
+
 # ---------------------------------------------------------------------------
 # 1) ROLE / SEASON
 # ---------------------------------------------------------------------------
