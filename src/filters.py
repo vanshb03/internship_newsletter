@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 from typing import Iterable, Optional
+from urllib.parse import urlparse
 
 from . import config
 from .models import Job
@@ -128,6 +129,15 @@ def is_us_location(job: Job, loc_cfg: dict) -> bool:
 
 def passes(job: Job, f: dict) -> bool:
     """Return True if the job should be kept; annotates the job in place."""
+    excluded_hosts = {h.lower().rstrip(".") for h in f.get("excluded_url_hosts", [])}
+    if excluded_hosts:
+        try:
+            host = (urlparse(job.url).hostname or "").lower().rstrip(".")
+        except ValueError:
+            return False
+        if host in excluded_hosts:
+            return False
+
     title_lc = _lc(job.title)
     role_cfg = f.get("role", {})
     loc_cfg = f.get("location", {})
