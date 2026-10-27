@@ -41,19 +41,39 @@ def _short_link_ids(job: Job) -> tuple[str, str]:
     return alias.job_id, alias.dedup_id
 
 
+def reconcile_aliases(state: dict[str, dict], jobs: list[Job]) -> dict[str, dict]:
+    """Remember all known identities of seen jobs, preserving their seen dates.
+
+    Group the entire batch first so a direct URL and multiple short links are
+    recognized regardless of source order. Unseen groups remain unseen.
+    """
+    groups: dict[str, set[str]] = {}
+    for job in jobs:
+        ids = groups.setdefault(job.dedup_id, set())
+        ids.update((job.job_id, job.dedup_id))
+        if job.short_url:
+            ids.update(_short_link_ids(job))
+    for ids in groups.values():
+        known = [state[jid] for jid in ids if jid in state]
+        if not known:
+            continue
+        meta = min(known, key=lambda item: item.get("first_seen", ""))
+        for jid in ids:
+            state.setdefault(jid, dict(meta))
+    return state
+
+
 def new_jobs(jobs: list[Job], state: dict[str, dict]) -> list[Job]:
     """Jobs whose id is not already in state (deduped within the batch too)."""
+    known = reconcile_aliases(dict(state), jobs)
     seen_now: set[str] = set()
     out: list[Job] = []
     for job in jobs:
         legacy_id = job.job_id
         dedup_id = job.dedup_id
-        # A job first notified under its short link is still the same job.
-        if job.short_url and any(i in state for i in _short_link_ids(job)):
-            continue
         if (
-            dedup_id in state
-            or legacy_id in state
+            dedup_id in known
+            or legacy_id in known
             or dedup_id in seen_now
             or legacy_id in seen_now
         ):
@@ -76,7 +96,7 @@ def update_state(
             "title": job.title,
             "url": job.url,
         }
-    return state
+    return reconcile_aliases(state, jobs)
 
 
 def prune(

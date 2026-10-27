@@ -21,6 +21,8 @@ from pathlib import Path
 from .. import config
 from ..filters import apply_filters
 from ..main import collect_jobs
+from ..sources.base import make_session
+from ..sources.short_links import resolve_short_links
 from . import applog as applog_mod
 from . import fields
 from . import runner
@@ -58,6 +60,8 @@ def _resolve_resume(profile) -> str:
 
 def _candidate_jobs(args, applog, allowed_ats: set[str]):
     matched = apply_filters(collect_jobs())
+    with make_session() as session:
+        resolve_short_links(matched, session)
     out = []
     seen_ids: set[str] = set()  # de-dup the same posting appearing in >1 list
     for job in matched:

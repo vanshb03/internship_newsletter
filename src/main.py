@@ -17,7 +17,7 @@ import sys
 from datetime import datetime
 
 from . import config
-from .dedup import load_state, new_jobs, prune, save_state, update_state
+from .dedup import load_state, new_jobs, prune, reconcile_aliases, save_state, update_state
 from .filters import apply_filters
 from .models import Job
 from .notify import discord as discord_notify
@@ -113,6 +113,7 @@ def run(
     resolve_short_links(matched, make_session())
 
     state = load_state(config.state_path())
+    reconcile_aliases(state, matched)
 
     if seed:
         # Mark everything currently open as already-seen, send nothing. Use this
@@ -155,6 +156,8 @@ def run(
 
     # Persist: record the new jobs as seen, prune old entries.
     state = update_state(state, fresh, today)
+    # Include aliases from duplicate source entries omitted from `fresh`.
+    reconcile_aliases(state, matched)
     state = prune(state, settings.get("prune_after_days", 120), today)
     save_state(config.state_path(), state)
     log.info("state saved (%d total tracked jobs)", len(state))
