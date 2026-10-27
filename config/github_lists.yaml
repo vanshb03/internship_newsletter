@@ -10,6 +10,12 @@
 
 enabled: true
 
+# Link shorteners some lists use instead of the employer URL. Each run swaps
+# them for the URL they redirect to (one HEAD request each; see
+# src/sources/short_links.py), so dedup and auto-apply see the real posting.
+short_link_hosts:
+  - go.vansh.nyc
+
 # JSON lists (SimplifyJobs-style listings.json schema).
 lists:
   - name: vanshb03-summer2027

@@ -25,6 +25,7 @@ from .notify import email as email_notify
 from .notify import sms as sms_notify
 from .sources.base import make_session
 from .sources.registry import build_all_sources
+from .sources.short_links import resolve_short_links
 
 log = logging.getLogger("intern_pos_emailer")
 
@@ -108,6 +109,8 @@ def run(
     raw = collect_jobs(limit=limit)
     matched = apply_filters(raw)
     log.info("%d jobs passed filters", len(matched))
+    # Short links -> employer URLs, before dedup compares URLs across lists.
+    resolve_short_links(matched, make_session())
 
     state = load_state(config.state_path())
 

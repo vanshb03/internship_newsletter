@@ -74,6 +74,8 @@ class Job(BaseModel):
     posted_date: Optional[str] = None  # ISO date string when known
     sponsorship: Optional[str] = None
     active: bool = True
+    # Set when `url` was resolved from a link shortener; holds the short link.
+    short_url: Optional[str] = None
 
     @property
     def location_str(self) -> str:

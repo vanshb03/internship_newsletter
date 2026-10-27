@@ -35,6 +35,12 @@ def save_state(path: Path, state: dict[str, dict]) -> None:
         fh.write("\n")
 
 
+def _short_link_ids(job: Job) -> tuple[str, str]:
+    """The ids the job had before its short link was resolved."""
+    alias = job.model_copy(update={"url": job.short_url})
+    return alias.job_id, alias.dedup_id
+
+
 def new_jobs(jobs: list[Job], state: dict[str, dict]) -> list[Job]:
     """Jobs whose id is not already in state (deduped within the batch too)."""
     seen_now: set[str] = set()
@@ -42,6 +48,9 @@ def new_jobs(jobs: list[Job], state: dict[str, dict]) -> list[Job]:
     for job in jobs:
         legacy_id = job.job_id
         dedup_id = job.dedup_id
+        # A job first notified under its short link is still the same job.
+        if job.short_url and any(i in state for i in _short_link_ids(job)):
+            continue
         if (
             dedup_id in state
             or legacy_id in state
